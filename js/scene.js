@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
+import { NebulaShader } from './nebula-shader.js';
+
 export function initScene(config) {
     // 1. Scene Setup (Reference: .agent/skills/threejs-fundamentals.md)
     const scene = new THREE.Scene();
@@ -37,11 +39,13 @@ export function initScene(config) {
     setupLighting(scene, config);
 
     // 5. Basic Environment (Temporary Dance Floor)
-    createEnvironment(scene, config);
+    const envData = createEnvironment(scene, config) || {};
 
     // 6. Loop
     renderer.setAnimationLoop(function () {
-        // Update logic here (visuals, etc.)
+        if (envData.skybox) {
+            envData.skybox.material.uniforms.time.value += 0.01;
+        }
 
         renderer.render(scene, camera);
     });
@@ -98,23 +102,21 @@ function createEnvironment(scene, config) {
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
-    // Starfield (Simple Points)
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 5000;
-    const posArray = new Float32Array(starCount * 3);
-
-    for (let i = 0; i < starCount * 3; i++) {
-        posArray[i] = (Math.random() - 0.5) * 100; // Spread across 100 units
-    }
-
-    starGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const starMat = new THREE.PointsMaterial({
-        size: 0.05,
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.8
+    // Nebula Skybox (Custom Shader)
+    const skyGeo = new THREE.SphereGeometry(1000, 60, 40); // Large sphere
+    const skyMat = new THREE.ShaderMaterial({
+        vertexShader: NebulaShader.vertexShader,
+        fragmentShader: NebulaShader.fragmentShader,
+        uniforms: {
+            time: { value: 0 },
+            resolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) }
+        },
+        side: THREE.BackSide
     });
 
-    const stars = new THREE.Points(starGeo, starMat);
-    scene.add(stars);
+    const skybox = new THREE.Mesh(skyGeo, skyMat);
+    scene.add(skybox);
+    console.log("Custom Nebula Shader added to scene.");
+
+    return { skybox };
 }

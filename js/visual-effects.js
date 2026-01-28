@@ -80,7 +80,7 @@ export class VisualEffects {
     }
 
     setupParticles() {
-        const particleCount = 2000;
+        const particleCount = 100; // Reduced from 2000 to 100
         const geometry = new THREE.BufferGeometry();
         const positions = new Float32Array(particleCount * 3);
         const scales = new Float32Array(particleCount);
