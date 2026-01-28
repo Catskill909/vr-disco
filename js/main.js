@@ -14,7 +14,7 @@ export const CONFIG = {
     platform: {
         size: 20,
         color: 0x111111,
-        gridColor: 0x00ffff
+        gridColor: 0x333333 // Dark Grey (No more neon cyan)
     },
     lighting: {
         ambientIntensity: 0.2,

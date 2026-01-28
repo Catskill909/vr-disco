@@ -17,66 +17,67 @@ export class VisualEffects {
     }
 
     setupFloor() {
-        // Find existing floor or create new better one
-        // For now, let's look for the platform we made in scene.js
-        // Ideally we would replace it or modify its material here
+        // Generate procedural texture
+        const texture = this.createFloorTexture();
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(10, 10); // 10x10 tiles
 
-        // Let's create a visualizer overlay on top of the floor
-        const geometry = new THREE.PlaneGeometry(this.config.platform.size, this.config.platform.size, 64, 64);
+        // Textured Dance Floor
+        const geometry = new THREE.PlaneGeometry(this.config.platform.size, this.config.platform.size);
         geometry.rotateX(-Math.PI / 2);
 
-        // Custom Shader Material for pulsing grid (Enhanced with threejs-shaders skill)
-        const material = new THREE.ShaderMaterial({
-            uniforms: {
-                time: { value: 0 },
-                color: { value: new THREE.Color(0x00ffff) },
-                audioLevel: { value: 0.0 }
-            },
-            vertexShader: `
-                varying vec2 vUv;
-                varying vec3 vPos;
-                
-                void main() {
-                    vUv = uv;
-                    vPos = position;
-                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-                }
-            `,
-            fragmentShader: `
-                uniform float time;
-                uniform vec3 color;
-                uniform float audioLevel;
-                varying vec2 vUv;
-                varying vec3 vPos;
-
-                void main() {
-                    // Create a grid pattern
-                    float gridX = step(0.98, fract(vUv.x * 20.0));
-                    float gridY = step(0.98, fract(vUv.y * 20.0));
-                    float grid = max(gridX, gridY);
-                    
-                    // Pulse from center
-                    float dist = distance(vUv, vec2(0.5));
-                    float pulse = sin(time * 2.0 - dist * 10.0) * 0.5 + 0.5;
-                    
-                    // Mix pulsing glow
-                    float alpha = grid * (0.3 + pulse * 0.3 + audioLevel * 0.5);
-                    
-                    // Fade edges
-                    alpha *= (1.0 - smoothstep(0.3, 0.5, dist));
-                    
-                    gl_FragColor = vec4(color, alpha);
-                }
-            `,
-            transparent: true,
-            side: THREE.DoubleSide,
-            depthWrite: false,
-            blending: THREE.AdditiveBlending
+        const material = new THREE.MeshStandardMaterial({
+            map: texture,
+            roughness: 0.2, // Glossy
+            metalness: 0.5, // Metallic
+            side: THREE.DoubleSide
         });
 
         this.floorMesh = new THREE.Mesh(geometry, material);
-        this.floorMesh.position.y = 0.05; // Slightly above main floor
+        this.floorMesh.position.y = 0.05;
+        this.floorMesh.receiveShadow = true;
         this.scene.add(this.floorMesh);
+
+        // No grid helper needed with tiles
+    }
+
+    createFloorTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 512;
+        canvas.height = 512;
+        const ctx = canvas.getContext('2d');
+
+        // Background (Grout lines)
+        ctx.fillStyle = '#111111';
+        ctx.fillRect(0, 0, 512, 512);
+
+        // Tiles (2x2 pattern for seamless repeat)
+        const tileSize = 250; // slightly smaller than 256 for grout line
+        const offset = 6; // grout width / 2
+
+        ctx.fillStyle = '#444444'; // Base tile color (Dark Silver)
+
+        // Top Left
+        ctx.fillRect(offset, offset, tileSize, tileSize);
+        // Top Right
+        ctx.fillRect(256 + offset, offset, tileSize, tileSize);
+        // Bottom Left
+        ctx.fillRect(offset, 256 + offset, tileSize, tileSize);
+        // Bottom Right
+        ctx.fillRect(256 + offset, 256 + offset, tileSize, tileSize);
+
+        // Add some "gloss" highlights to tiles for realism
+        ctx.fillStyle = '#555555';
+        const innerOffset = offset + 10;
+        const innerSize = tileSize - 20;
+
+        ctx.fillRect(innerOffset, innerOffset, innerSize, innerSize);
+        ctx.fillRect(256 + innerOffset, innerOffset, innerSize, innerSize);
+        ctx.fillRect(innerOffset, 256 + innerOffset, innerSize, innerSize);
+        ctx.fillRect(256 + innerOffset, 256 + innerOffset, innerSize, innerSize);
+
+        return new THREE.CanvasTexture(canvas);
     }
 
     setupParticles() {
@@ -140,12 +141,8 @@ export class VisualEffects {
         const volume = audioSystem.getAverageVolume(); // 0-255
         const scale = 1 + (volume / 255) * 0.5;
 
-        // 1. Floor Pulse (Shader Update)
-        if (this.floorMesh) {
-            this.floorMesh.material.uniforms.time.value = Date.now() * 0.001;
-            // Normalize volume 0-255 to 0-1 range for shader
-            this.floorMesh.material.uniforms.audioLevel.value = volume / 255.0;
-        }
+        // 1. Floor (Static now)
+        // No update needed for MeshStandardMaterial
 
         // 2. Particles Rise
         if (this.particles) {

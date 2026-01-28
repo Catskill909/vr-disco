@@ -86,21 +86,9 @@ function setupLighting(scene, config) {
 }
 
 function createEnvironment(scene, config) {
-    // Basic Platform
-    const geometry = new THREE.CylinderGeometry(config.platform.size, config.platform.size, 0.2, 32);
-    const material = new THREE.MeshStandardMaterial({
-        color: config.platform.color,
-        roughness: 0.2,
-        metalness: 0.8
-    });
-    const platform = new THREE.Mesh(geometry, material);
-    platform.position.y = -0.1; // Just below feet
-    scene.add(platform);
+    // Environment setup is now handled in visual-effects.js
+    // We only handle the skybox here
 
-    // Grid helper for "Tron" look
-    const gridHelper = new THREE.GridHelper(config.platform.size * 2, 40, config.platform.gridColor, 0x444444);
-    gridHelper.position.y = 0.01;
-    scene.add(gridHelper);
 
     // Nebula Skybox (Custom Shader)
     const skyGeo = new THREE.SphereGeometry(1000, 60, 40); // Large sphere
