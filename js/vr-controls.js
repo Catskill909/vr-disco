@@ -64,7 +64,12 @@ export class VRControls {
     createTeleportMarker() {
         const marker = new THREE.Mesh(
             new THREE.RingGeometry(0.2, 0.3, 32).rotateX(-Math.PI / 2),
-            new THREE.MeshBasicMaterial({ color: 0x00ffff })
+            new THREE.MeshBasicMaterial({
+                color: 0x00ffff,
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            })
         );
         marker.visible = false;
         return marker;
