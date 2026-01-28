@@ -32,10 +32,11 @@ class App {
         console.log("Using Skills from .agent/skills/...");
 
         // 1. Initialize 3D Scene (Reference: .agent/skills/threejs-fundamentals.md)
-        const { scene, camera, renderer, userRig } = initScene(CONFIG);
+        const { scene, camera, renderer, userRig, skybox } = initScene(CONFIG);
         this.scene = scene;
         this.renderer = renderer;
         this.camera = camera;
+        this.skybox = skybox;
 
         // 2. Audio System
         this.audioSystem = new AudioSystem(CONFIG);
@@ -48,21 +49,32 @@ class App {
         this.visualEffects = new VisualEffects(scene, CONFIG);
         this.visualEffects.init();
 
-        this.models = new Models(scene);
-        this.models.init();
+        // this.models = new Models(scene);
+        // this.models.init();
 
         // 5. Interaction for Audio Start (Overlay Handling)
         this.setupOverlay();
 
-        // 6. Render Loop Update
+        // 6. Consolidated Render Loop (CRITICAL FIX)
         renderer.setAnimationLoop(() => {
+            if (this.isContextLost) return; // Wait for recovery
+
+            // Update Skybox Time
+            if (this.skybox && this.skybox.material.uniforms.time) {
+                this.skybox.material.uniforms.time.value += 0.01;
+            }
+
+            // Update Systems
             this.vrControls.update();
             this.visualEffects.update(this.audioSystem);
+
+            // Render
             this.renderer.render(this.scene, camera);
         });
 
         // Expose app to window for debuggingConsole
         window.app = this;
+        this.isContextLost = false;
     }
 
     setupOverlay() {
